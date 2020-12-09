@@ -1,0 +1,151 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+ ---
+title: "Practica1Fifa"
+output:
+  html_document:
+    theme: spacelab
+    highlight: kate
+    df_print: paged
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Preguntas a contestar mediante Análisis de Datos.
+
+La primera estrategia de preparación de datos que vamos a usar será análisis PCA.
+Si ejecutamos
+```{r }
+library(ggplot2)
+datos_train = read.csv("mnist_train.csv")
+datos_test = read.csv("mnist_test.csv")
+#Ahora vamos a hacer el análisis PCA sobre el conjunto de datos de training.
+library(gridExtra)
+#Análisis para 200 variables para ver si el análisis es consistente, en caso de que si lo hacemos para todas.
+pca_result = prcomp(datos_train[1:200],)
+(VE <- pca_result$sdev^2)
+PVE <- VE / sum(VE)
+
+# Gráfico PVE
+PVEplot <- qplot(c(1:200), PVE) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab("PVE") +
+    ggtitle("Scree Plot") +
+    ylim(0, 1)
+
+# PVE acumulado
+cumPVE <- qplot(c(1:200), cumsum(PVE)) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab(NULL) +
+    ggtitle("Cumulative Scree Plot") +
+    ylim(0,1)
+pcas = as.data.frame(pca_result$x,stringsAsFactors=F)
+pcas = cbind(number= datos_train$X5,pcas)
+grid.arrange(PVEplot, cumPVE, ncol = 2)
+```
+Ahora vamos a hacer el mismo proceso pero con el conjunto de training completo.
+```{r }
+library(ggplot2)
+system.time(pca_result <- prcomp(datos_train))
+df =data.frame(PVE)
+#Tarda: 128.59 user
+(VE <- pca_result$sdev^2)
+PVE <- VE / sum(VE)
+
+# Gráfico PVE
+PVEplot <- qplot(c(1:785), PVE) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab("PVE") +
+    ggtitle("Scree Plot") +
+    ylim(0, 1)
+
+# PVE acumulado
+cumPVE <- qplot(c(1:785), cumsum(PVE)) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab(NULL) +
+    ggtitle("Cumulative Scree Plot") +
+    ylim(0,1)
+
+grid.arrange(PVEplot, cumPVE, ncol = 2)
+cumsum(PVE[1:60])
+```
+En este plot podemos ver cómo evolucionan los componentes principales y además en el cumsum tenemos que con 60 componentes principales podemos explicar al menos, el 85% de la varianza en la muestra. Por lo tanto podemos usar estos 60 componentes para generar el modelo.
+```{r }
+library(caret)
+PCS=PVE[1:60]
+pcas = as.data.frame(pca_result$x,stringsAsFactors=F)
+pcas = cbind(number= datos_train$X5,pcas)
+PCS=pcas[1:60]
+loadings = data.frame(pca_result$rotation)[1:60]
+```
+Una vez transformados los datos vamos a generar modelos sobre este conjunto de datos. Para estos modelos se van a usar los mecanismos de comparación de modelos de caret y una vez generados los modelos los enfrentaremos a los de RFE.
+
+ se van a generar dos grupos de modelos diferentes. Uno que proviene de datos transformados por PCA y otro que proviene de seleccionar las variables más relevantes mediante el esquema de selección de Caret.
+ 
+ 
+
+Ahora entramos en la parte de entrenar modelos potencialmente útiles para predecir la variable de respuesta y. En todo proceso de este tipo, los pasos a ejecutar son los siguientes
+
+Paso 1. Decidir qué algoritmo, o algoritmos, de Machine Learning utilizar.Se van a usar algoritmos pertenecientes a distintos paradigmas, usaremos: En cuanto a árboles de decisión usaremos Random forest. Un algoritmo de red neuronal como Multi-Layer Perceptron.Y por último un algoritmo de regresión lineal, glmnet
+
+```{r }
+library(caret)
+Var_salida_pc = c("number")
+Var_entrada_pc_usadas = setdiff(names(PCS),Var_salida_pc)
+set.seed(1234)
+#Separamos los datos en training y test
+#Pcs.TrainIdx.80<- createDataPartition(PCS[[Var_salida_pc]],
+#                                       p=0.8, #Genera un 80% para train, 20% para test
+ #                                      list = FALSE, #Dame los resultados en una matriz
+  #                                     times = 1) #Genera solamente una partición 80/20
+#str(Pcs.TrainIdx.80) #Como podemos ver, es una matriz de una columna, con 615 ejemplares
+#Pcs.Datos.Train <- PCS[Pcs.TrainIdx.80,]
+#Pcs.Datos.Test <- PCS[-Pcs.TrainIdx.80,]
+#Una vez con los datos listos podemos crear los modelos para hacer el training
+system.time(
+  pc.modelo.bstrp25.glmnet<-train(PCS[Var_entrada_pc_usadas],
+                                 PCS[[Var_salida_pc]], 
+                                 method='glmnet'))
+#user  system elapsed 
+ #23.217   0.912  24.389 
+
+system.time(
+   pc.modelo.bstrp25.mlp<-train(PCS[Var_entrada_pc_usadas],
+                                 PCS[[Var_salida_pc]], 
+                                  method='mlp'))
+#  user   system  elapsed 
+#2363.704   11.463 2388.799 
+pc.modelo.bstrp25.mlp
+```
+Para el modelo generado por mlp tenemos que: El algoritmo ha sido ejecutado sobre 48000 ejemplares, 59 predictores y sin preproceso. La estimación de la bondad del algoritmo se realiza mediante bootstrapping con muestreo con remplazamiento sobre 25 conjuntos distintos. Como podemos ver tenemos un único hiperparámetro que es "Size" que se refiere al número de unidades en las capas ocultas.
+Nosotros nos quedaremos con size = 5 ya que es el que tiene un menor error medio y un Rsquared que nos explica el 9% de la varianza lo cual es muy bajo pero es el mayor de todos.
+
+Para el modelo generado por glmnet tenemos que: El algoritmo ha sido ejecutado sobre 48000 ejemplares, 59 predictores y sin preproceso. La estimación de la bondad del algoritmo se realiza mediante bootstrapping con muestreo con remplazamiento sobre 25 conjuntos distintos.
+```{R}
+modelLookup(("glm"))
+```
+Como podemos ver glmnet tiene 2 hiperparámteros, alpha es el porcentaje de mezcla y lambda el parámetro de regularización. Como podemos ver la combinación  alpha = 0.55 and lambda = 0.002836847 es la que nos proporciona un mayor R²  y un error medio menor por lo que esa será la combinación de hiperparámetros ideal para este modelo.
+Paso 2. Encontrar cuales son los mejores valores a dar a los hiper-parámetros de dichos algoritmos, cuando los hacemos trabajar sobre nuestro problema.
+```{R}
+
+system.time(
+   pc.modelo.bstrp25.Rp<-train(Pcs.Datos.Train[Var_entrada_pc_usadas],
+                                 Pcs.Datos.Train[[Var_salida_pc]], 
+                                  method='rpart'))
+```
+Para el modelo rpart tenemos como hiperparámetro cp que es la relación entre cantidad de poda del algoritmo y la complejidad del árbol. Como en los modelos anteriores nos quedaremos con aquellos con mayor R² y menor error, nos quedamos con cp = 0.05297273.
+
+Paso 3. Obtener el correspondiente modelo ha, para cada algoritmo a, dadas las posibles combinaciones de valores para los hiper-parámetros, que hemos determinado en el Paso 2
+Paso 4. Comparar los modelos obtenidos con cada algoritmo y decidir con cual nos quedamos.

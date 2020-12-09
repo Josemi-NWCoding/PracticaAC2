@@ -1,0 +1,35 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+ ---
+title: "Practica1Fifa"
+output:
+  html_document:
+    theme: spacelab
+    highlight: kate
+    df_print: paged
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Introducción
+En esta Práctica de Aprendizaje computacional se va a trabajar con el conjunto de datos MNIST donde tenemos imágenes en escalas de grises que representan dígitos escritos a mano alzada.
+
+#Trabajo a realizar
+Sobre este conjunto de datos vamos a tener que aplicar técnicas de clasificación sobre 10 clases ya que tenemos que predecir el dígito escrito. Para llevar esto a cabo vamos a realizar análisis que nos permitan producir modelos de clasificación minimizando los fallos en la predicción.
+Para conseguir este fin usaremos algoritmos de aprendizaje de diferentes familias como redes neuronales, naive bayes, ensamblajes, clasificadores lineales etc.
+A parte de centrarnos en la construcción del modelo, también nos tenemos que centrar en la preparación de los datos, para la cual seguiremos dos caminos: Por un lado usaremos analisis de componentes principales donde reduzcamos el número de predictores considerablemente, pero sin bajar del 85% de la varianza explicada. Por otro lado tenemos el uso de RFE para quedarnos con las características más relevantes.
+Una vez tengamos nuestros modelos para PCA y RFE los compararemos entre sí  para poder concluir que modelo es el mejor y que tipo de preparación de datos es la mejor a realizar en este caso.
+#Preparación de datos
+En este apartado vamos a ver como se lleva a cabo la preparación de los datos por ambos caminos, y dichos resultados serán comentados y reutilizados para la obtención de los modelos de machine learning.
+
+##Extracción de características mediante PCA
+
+##Selección de características mediante RFE.

@@ -20,7 +20,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 #Introducción
-En esta Práctica de Aprendizaje computacional se va a trabajar con el conjunto de datos MNIST donde tenemos imágenes en escalas de grises que representan dígitos escritos a mano alzada.
+En esta Práctica de Aprendizaje computacional se va a trabajar con el conjunto de datos MNIST donde tenemos imágenes en escalas de grises que representan dígitos escritos a mano alzada. Lo primero que vamos a hacer es establecer el directorio donde encontraremos los ".csv" y cargar las librerías necesarias.
+```{R}
+setwd("~/Escritorio/DIR RSTUDIO/R-MachineLearning-AC/PracticaAC2/")
+library(caret)
+library(gridExtra)
+datos_train = read.csv("mnist_train.csv")
+datos_test = read.csv("mnist_test.csv")
+
+
+
+
+```
 
 #Trabajo a realizar
 Sobre este conjunto de datos vamos a tener que aplicar técnicas de clasificación sobre 10 clases ya que tenemos que predecir el dígito escrito. Para llevar esto a cabo vamos a realizar análisis que nos permitan producir modelos de clasificación minimizando los fallos en la predicción.
@@ -31,5 +42,62 @@ Una vez tengamos nuestros modelos para PCA y RFE los compararemos entre sí  par
 En este apartado vamos a ver como se lleva a cabo la preparación de los datos por ambos caminos, y dichos resultados serán comentados y reutilizados para la obtención de los modelos de machine learning.
 
 ##Extracción de características mediante PCA
+```{R}
+ str(datos_train)
+```
+En este problema podemos ver que tenemos un conjunto de datos a tratar con 785 predictores, lo que lo hace un número muy dificil de manejar a la hora de abordar el problema. Por tanto vamos a tratar de reducir la dimensionalidad del problema intentando que como mínimo se explique el 85% de la varianza. Para este apartado usaremos la orden "prcomp()" que ya usamos en su momento en la primera Práctica cuando hicimos una reducción de dimensionalidad a través de Componentes principales.
+```{R}
+barplot(table(x$Name), main = "barplot")
+#En este plot observamos que el conjunto de datos no está totalmente balanceado.
+table(datos_train$X5)/nrow(datos_train)
+#Vamos a hacer un sample para reducir la cantidad de datos de entrenamiento pero mantener la misma proporción
+
+set.seed(1234)
+datos_acotados = datos_train[sample(1:nrow(datos_train),40000),1:ncol(datos_train)]
+count_acotados = (table(datos_acotados$X5)/nrow(datos_acotados))*100
+count_train = (table(datos_train$X5)/nrow(datos_train))*100
+x = data.frame(count_acotados,count_train)
+x = melt(x)[2:4]
+ggplot(data =x, 
+       aes(x = Var1.1, y = value, fill = variable)) + 
+    geom_bar(stat = 'identity', position = 'dodge')
+```
+Como podemos ver en el plot anterior, hemos reducido en 20 mil ocurrencias el conjunto de datos y seguimos teniendo un porcentaje similar al original en cuanto a aparición de números. Ahora procederemos a realizar el análisis PCA.
+
+```{R}
+pca_train <- prcomp(datos_acotados[-1])
+#Quitamos la columna de salida para calcular los pca
+pca_train <- prcomp(datos_acotados[-1])
+#obtenemos la proporción de Varianza explicada
+(VE <- pca_result$sdev^2)
+PVE <- VE / sum(VE)
+PVEplot <- qplot(c(1:784), PVE) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab("PVE") +
+    ggtitle("Scree Plot") +
+    ylim(0, 1)
+
+# PVE acumulado
+cumPVE <- qplot(c(1:784), cumsum(PVE)) + 
+    geom_line() + 
+    xlab("Principal Component") + 
+    ylab(NULL) +
+    ggtitle("Cumulative Scree Plot") +
+    ylim(0,1)
+
+grid.arrange(PVEplot, cumPVE, ncol = 2)
+cumsum(PVE[1:60])
+PCAS_Train= cbind(datos_acotados[1],pca_train$x)
+
+
+```
+Tal y como vemos en el plot, con 60 componentes principales podemos explicar un 85% de la varianza.
+Una vez sabemos que necesitamos 60 componentes principales, podemos aplicar los loadigns sobre el conjunto de test para sacar también los componentes principales de este
+```{R}
+PCAS_test = as.matrix(datos_test[-1]) %*% pca_train$rotation
+PCAS_test = as.data.frame(PCAS_test)
+PCAS_test = cbind(datos_test[1],PCAS_test)
+```
 
 ##Selección de características mediante RFE.

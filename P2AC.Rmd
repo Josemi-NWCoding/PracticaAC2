@@ -25,6 +25,7 @@ En esta Práctica de Aprendizaje computacional se va a trabajar con el conjunto 
 setwd("~/Escritorio/DIR RSTUDIO/R-MachineLearning-AC/PracticaAC2/")
 library(caret)
 library(gridExtra)
+library(reshape2)
 datos_train = read.csv("mnist_train.csv")
 datos_test = read.csv("mnist_test.csv")
 
@@ -47,19 +48,20 @@ En este apartado vamos a ver como se lleva a cabo la preparación de los datos p
 ```
 En este problema podemos ver que tenemos un conjunto de datos a tratar con 785 predictores, lo que lo hace un número muy dificil de manejar a la hora de abordar el problema. Por tanto vamos a tratar de reducir la dimensionalidad del problema intentando que como mínimo se explique el 85% de la varianza. Para este apartado usaremos la orden "prcomp()" que ya usamos en su momento en la primera Práctica cuando hicimos una reducción de dimensionalidad a través de Componentes principales.
 ```{R}
-barplot(table(x$Name), main = "barplot")
-#En este plot observamos que el conjunto de datos no está totalmente balanceado.
-table(datos_train$X5)/nrow(datos_train)
-#Vamos a hacer un sample para reducir la cantidad de datos de entrenamiento pero mantener la misma proporción
-
 set.seed(1234)
 datos_acotados = datos_train[sample(1:nrow(datos_train),40000),1:ncol(datos_train)]
 count_acotados = (table(datos_acotados$X5)/nrow(datos_acotados))*100
 count_train = (table(datos_train$X5)/nrow(datos_train))*100
 x = data.frame(count_acotados,count_train)
 x = melt(x)[2:4]
+barplot(table(x$Name), main = "barplot")
+#En este plot observamos que el conjunto de datos no está totalmente balanceado.
+table(datos_train$X5)/nrow(datos_train)
+#Vamos a hacer un sample para reducir la cantidad de datos de entrenamiento pero mantener la misma proporción
+
+
 ggplot(data =x, 
-       aes(x = Var1.1, y = value, fill = variable)) + 
+       aes(x = variable, y = value, fill = variable)) + 
     geom_bar(stat = 'identity', position = 'dodge')
 ```
 Como podemos ver en el plot anterior, hemos reducido en 20 mil ocurrencias el conjunto de datos y seguimos teniendo un porcentaje similar al original en cuanto a aparición de números. Ahora procederemos a realizar el análisis PCA.
@@ -101,3 +103,44 @@ PCAS_test = cbind(datos_test[1],PCAS_test)
 ```
 
 ##Selección de características mediante RFE.
+Tomando como referencia el flujo de trabajo que debemos de seguir, ya hemos explicado el primer camino(PCA) y ahora toca explicar la segunda manera que tenemos de eliminar predictores y reducir de manera considerable la dimensionalidad del problema, este segundo metodo es usando RFE (Recursive Feature Elimination).
+De manera resumida, el funcionamiento de rfe explicado en la documentación de caret es:
+1º Seleccionamos el modelo empleado para evaluar los predictores, si ejecutamos "help("rfeControl")" podemos ver que en functions podemos usar lm, rf, treebag y nbFuncs. En nuestro caso nos decidimos por usar random forest porque nos enfrentamos ante un problema de clasificación no binario, es decir, tenemos más de 2 elementos que clasificar y por eso no podemos usar regresión linear.
+2º Ajustamos el modelo incorporando todas las variables.
+3º Hacemos un ranking de la importancia de estas variables.
+4º Escogemos el tamaño del conjunto de predictores que queremos tener.
+5º For each subconjunto definido nos quedamos con las n variables mejor valoradas en el ranking y las usamos para reajustar el modelo y calcular un error del nuevo modelo.
+6º Calculamos el rendimiento para los distintos conjuntos y determinamos el número apropiado de predictores.
+7º Usamos el modelo correspondiente a la configuración optima que hayamos encontrado.
+
+```{R}
+library(mlbench)
+library(randomForest)
+library(doParallel)
+cl <- makePSOCKcluster(3)
+registerDoParallel(cl)
+
+
+predictors = datos_train[,-1]
+outcome = datos_train[,1]
+#En la variable subsets guardamos los conjuntos de predictores.
+#Hacemos una primera estimacón de 100 a 700
+subsets <- c(40,60,80,100)
+set.seed(9876)
+ctrl <- rfeControl(functions = treebagFuncs,
+                   method = "cv",
+                   number = 4,
+                   verbose = TRUE)
+
+
+
+
+bagProfile = rfe(predictors, outcome,
+                 sizes = subsets,
+                 rfeControl = ctrl)
+bagProfile
+saveRDS(bagProfile,file = "bagProfile.rds")
+rds = readRDS(file = "bagProfile.rds")
+
+
+```

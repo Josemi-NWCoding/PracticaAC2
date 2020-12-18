@@ -1,0 +1,65 @@
+---
+title: "AnalisisMetodos"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+mlpWeightDecay, naive_bayes, rpart
+
+## Multi-Layer Perceptron with weight decay
+
+El primer método a analizar generará un Perceptrón Multicapa con "weight decay". Se trata de una red de tipo feed-forward con varias capas de nodos, donde los nodos de cada capa están conectados con todos los de las capas anterior y posterior. El entrenamiento de la red se realizará, en este caso, con backpropagation modificada para incluir "weight decay", lo que dificultará el sobreentrenamiento.
+
+```{r }
+library(caret)
+
+mlpwdinfo = getModelInfo("mlpWeightDecay")
+names(mlpwdinfo)
+```
+
+Podemos ver que se incluyen dos algoritmos, elegiremos el que nos interesa y a continuación veremos sus parámetros.
+
+```{r }
+mlpwdinfo = mlpwdinfo$mlpWeightDecay
+mlpwdinfo$parameters
+```
+
+Los parámetros disponibles para el algoritmo son el tamaño de la red neuronal (size) y la velocidad a la que los pesos de los arcos irán disminuyendo (decay). Un tamaño demasiado pequeño no permitirá a la red alcanzar una precisión muy alta con los valores de entrenamiento ni de test, mientras que si el tamaño es demasiado alto habrá más posibilidades de que el modelo caiga en el sobreentrenamiento. Por otro lado, un decay demasiado bajo no afectará demasiado al modelo y hará que sea más fácil tener overfitting, mientras que si el decay es muy alto la red no conseguirá aprender nada, pues sus pesos bajarán demasiado rápido de valor.
+
+Para el ajuste de los hiperparámetros usaremos la propia función grid predefinida, con un tamaño inicial de 3.
+
+```{r }
+gridmlpwd = mlpwdinfo$grid(x=NULL,y=NULL,len=3)
+gridmlpwd
+```
+
+
+## Naive Bayes
+
+Otro algoritmo que analizaremos será el de Naive Bayes. Es un método que genera un modelo probabilístico de las distintas hipótesis planteadas sobre un conjunto de predictores, tomando los valores de los atributos como condicionalmente independientes y facilitando así el cálculo de las probabilidades por el Teorema de Bayes de probabilidad condicionada.
+
+```{r }
+nbayesinfo = getModelInfo("naive_bayes")
+names(nbayesinfo)
+```
+
+```{r }
+nbayesinfo = nbayesinfo$naive_bayes
+nbayesinfo$parameters
+```
+
+Este algoritmo cuenta con tres parámetros. El primero, "laplace", indica el valor utilizado en el suavizado de Laplace, una técnica que ayuda a resolver el problema que tiene Naive Bayes con la probabilidad 0. Un valor mayor de este parámetro hará que la distribución de probabilidad se aproxime más a una distribución uniforme.
+El segundo parámetro, "usekernel", si tiene un valor verdadero utilizará la densidad para estimar las densidades condicionales de los predictores y sus clases.
+El tercer y último parámetro, "adjust", se encargará de ajustar el ancho de banda del algoritmo.
+
+## Árboles CART (rpart)
+
+A continuación analizaremos el algoritmo rpart, que nos generará un árbol CART a partir de los datos de entrenamiento.
+
+## Boosted Classification Trees (ada)
+
+

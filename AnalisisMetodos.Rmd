@@ -8,9 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-mlpWeightDecay, naive_bayes, rpart
-
-## Multi-Layer Perceptron with weight decay
+## Multi-Layer Perceptron with weight decay (mlpWeightDecay)
 
 El primer método a analizar generará un Perceptrón Multicapa con "weight decay". Se trata de una red de tipo feed-forward con varias capas de nodos, donde los nodos de cada capa están conectados con todos los de las capas anterior y posterior. El entrenamiento de la red se realizará, en este caso, con backpropagation modificada para incluir "weight decay", lo que dificultará el sobreentrenamiento.
 
@@ -38,7 +36,7 @@ gridmlpwd
 ```
 
 
-## Naive Bayes
+## Naive Bayes (naive_bayes)
 
 Otro algoritmo que analizaremos será el de Naive Bayes. Es un método que genera un modelo probabilístico de las distintas hipótesis planteadas sobre un conjunto de predictores, tomando los valores de los atributos como condicionalmente independientes y facilitando así el cálculo de las probabilidades por el Teorema de Bayes de probabilidad condicionada.
 
@@ -95,6 +93,34 @@ Podemos ver que sólo dispone de un parámetro, "cp", que corresponde al paráme
 
 No obstante, nos encontramos con que no podemos utilizar este método para solucionar nuestro problema. Como se ha visto en el tema 5 de teoría, los árboles CART son específicos para problemas de regresión, mientras que el problema con el que debemos lidiar es de clasificación. Es por esto que debemos desechar este método.
 
-## Boosted Classification Trees (ada)
+## Bagged AdaBoost (AdaBag)
+
+Es un algoritmo de clasificación basado en ensamblajes, concretamente en bagging y en boosting. El algoritmo combina un algoritmo de bagging para generar predictores combinados (agrupados) en base a los predictores iniciales, los almacena en forma de árbol y utiliza estos resultados en el algoritmo Adaboost, que los combina en una suma ponderada que consigue mejores resultados.
+
+```{r }
+#https://cran.r-project.org/web/packages/adabag/adabag.pdf
+#https://en.wikipedia.org/wiki/AdaBoost
+#https://link.springer.com/article/10.1023/A:1018054314350
+```
+
+```{r }
+adabaginfo = getModelInfo("AdaBag")
+names(adabaginfo)
+```
+
+```{r }
+adabaginfo = adabaginfo$AdaBag
+adabaginfo$parameters
+```
+
+Los parámetros de que disponemos son "mfinal" y "maxdepth". El primero controla el número de iteraciones que se ejecutará el boosting, o bien el número de árboles que se usará. El segundo, por su parte, establece el límite de profundidad que pueden tener los nodos en el árbol final generado.
+
+Para el análisis de hiperparámetros nos bastará, en principio, con utilizar el método grid predefinido, en este caso con un tamaño de 3.
+
+```{r }
+gridadabag = adabaginfo$grid(x=NULL,y=NULL,len=3)
+gridadabag
+```
+
 
 

@@ -77,7 +77,23 @@ La elección de los valores de "laplace" se debe a que con 0 no se aplica el sua
 
 ## Árboles CART (rpart)
 
-A continuación analizaremos el algoritmo rpart, que nos generará un árbol CART a partir de los datos de entrenamiento.
+A continuación analizaremos el algoritmo rpart, que nos generará un árbol CART a partir de los datos de entrenamiento. El algoritmo utiliza un criterio de selección del split de nodos basado en ascensión de colinas y una poda basada en equilibrar el coste y la complejidad del árbol, intentando evitar el overfitting (demasiada complejidad) y el underfitting (complejidad demasiado baja).
+
+```{r }
+rpartinfo = getModelInfo("rpart")
+names(rpartinfo)
+```
+
+Entre los distintos paquetes disponibles elegiremos el indicado, "rpart".
+
+```{r }
+rpartinfo = rpartinfo$rpart
+rpartinfo$parameters
+```
+
+Podemos ver que sólo dispone de un parámetro, "cp", que corresponde al parámetro de complejidad que determinará a qué nivel de complejidad se podarán ramas del árbol, pudiendo ajustarlo para conseguir árboles con mayor o menor complejidad.
+
+No obstante, nos encontramos con que no podemos utilizar este método para solucionar nuestro problema. Como se ha visto en el tema 5 de teoría, los árboles CART son específicos para problemas de regresión, mientras que el problema con el que debemos lidiar es de clasificación. Es por esto que debemos desechar este método.
 
 ## Boosted Classification Trees (ada)
 

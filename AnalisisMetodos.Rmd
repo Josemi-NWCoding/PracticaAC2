@@ -56,6 +56,25 @@ Este algoritmo cuenta con tres parámetros. El primero, "laplace", indica el val
 El segundo parámetro, "usekernel", si tiene un valor verdadero utilizará la densidad para estimar las densidades condicionales de los predictores y sus clases.
 El tercer y último parámetro, "adjust", se encargará de ajustar el ancho de banda del algoritmo.
 
+A la hora de generar un grid para el ajuste de los hiperparámetros, vemos que el método por defecto sólo varía el parámetro de "usekernel", dejando "laplace" a 0 y "adjust" a 1.
+
+```{r }
+nbayesinfo$grid
+```
+
+Es por esto que definiremos nuestra propia grid, para probar también combinaciones de dichos parámetros.
+
+```{r }
+#Sacada la info sobre parámetros de:
+#https://cran.r-project.org/web/packages/naivebayes/naivebayes.pdf
+#https://towardsdatascience.com/laplace-smoothing-in-na%C3%AFve-bayes-algorithm-9c237a8bdece
+
+gridnbayes = expand.grid(usekernel = c(TRUE, FALSE), laplace = c(0, 1, 10), adjust = c(0.5, 1, 1.5))
+gridnbayes
+```
+
+La elección de los valores de "laplace" se debe a que con 0 no se aplica el suavizado de Laplace, el 1 es un valor suficiente para que el suavizado sea notable y el 10 es un valor superior para asegurar que no descuidemos una posible mejora al aumentar el parámetro. Respecto a los valores de "adjust", simplemente utilizamos el valor por defecto de 1 como valor central, y probamos los casos para 0.5 por debajo y por encima de dicho valor.
+
 ## Árboles CART (rpart)
 
 A continuación analizaremos el algoritmo rpart, que nos generará un árbol CART a partir de los datos de entrenamiento.
